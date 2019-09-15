@@ -12,6 +12,8 @@ public:
 	// think about what else should be included as member variables
 	int block_size;  // size of the block
 	BlockHeader* next; // pointer to the next block
+	BlockHeader* buddy; //pointer to buddy block
+	bool free;
 };
 
 class LinkedList{
@@ -20,11 +22,32 @@ public:
 	BlockHeader* head;		// you need a head of the list
 public:
 	void insert (BlockHeader* b){	// adds a block to the list
-
+		if (head == NULL){
+			head = b;
+			return;
+		}
+		BlockHeader* pointer = head;
+		while(pointer->next!=NULL){
+			pointer = pointer->next;
+		}
+		pointer->next = b;
 	}
 
 	void remove (BlockHeader* b){  // removes a block from the list
+		BlockHeader* pointer = b;
+		if (pointer->next == NULL){
+			delete(pointer);
+			return;
+		}
+		while(pointer->next->next!=NULL){
+			pointer = pointer->next;
+		}
+		delete(pointer->next);
+		pointer->next = NULL;
+	}
 
+	LinkedList(){
+		head = NULL;
 	}
 };
 
@@ -35,6 +58,7 @@ private:
 	vector<LinkedList> FreeList;
 	int basic_block_size;
 	int total_memory_size;
+	char* start;
 
 private:
 	/* private function you are required to implement
@@ -81,7 +105,7 @@ public:
 	/* Mainly used for debugging purposes and running short test cases */
 	/* This function should print how many free blocks of each size belong to the allocator
 	at that point. The output format should be the following (assuming basic block size = 128 bytes):
-
+	BlockHeader*
 	[0] (128): 5
 	[1] (256): 0
 	[2] (512): 3
