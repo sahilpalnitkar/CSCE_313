@@ -20,35 +20,39 @@ class LinkedList{
 	// this is a special linked list that is made out of BlockHeader s. 
 public:
 	BlockHeader* head;		// you need a head of the list
-public:
-	void insert (BlockHeader* b){	// adds a block to the list
-		if (head == NULL){
-			head = b;
-			return;
-		}
-		BlockHeader* pointer = head;
-		while(pointer->next!=NULL){
-			pointer = pointer->next;
-		}
-		pointer->next = b;
-	}
-
-	void remove (BlockHeader* b){  // removes a block from the list
-		BlockHeader* pointer = b;
-		if (pointer->next == NULL){
-			delete(pointer);
-			return;
-		}
-		while(pointer->next->next!=NULL){
-			pointer = pointer->next;
-		}
-		delete(pointer->next);
-		pointer->next = NULL;
-	}
 
 	LinkedList(){
 		head = NULL;
 	}
+
+	void insert (BlockHeader* b){	// adds a block to the list
+		BlockHeader* temp = head;
+		if (head == NULL){
+			head = b;
+		}
+		while (temp->next != NULL){
+			temp = temp->next;
+		}
+		temp->next = b;
+	}
+
+	void remove (BlockHeader* b){  // removes a block from the list
+		if(head == NULL){
+			cerr<<"No node to remove!";
+			return;
+		}
+		if (head->next == NULL){
+			head = NULL;
+			return;
+		}
+		if (head->next!=NULL){
+			head = head->next;
+			b->next = NULL;
+			return;
+		}
+	}
+
+	
 };
 
 
