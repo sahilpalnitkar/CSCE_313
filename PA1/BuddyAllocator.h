@@ -2,6 +2,8 @@
 #define _BuddyAllocator_h_
 #include <iostream>
 #include <vector>
+#include <cstdlib>
+#include <cmath>
 using namespace std;
 typedef unsigned int uint;
 
@@ -10,49 +12,59 @@ typedef unsigned int uint;
 class BlockHeader{
 public:
 	// think about what else should be included as member variables
+    bool free;
 	int block_size;  // size of the block
 	BlockHeader* next; // pointer to the next block
-	BlockHeader* buddy; //pointer to buddy block
-	bool free;
+    BlockHeader* buddy;
+//    BlockHeader(){
+//        next = NULL;
+//        buddy = NULL;
+//        free = true;
+//        cout<<"BH const"<<endl;
+//    }
 };
 
-class LinkedList{
+class LinkedList{ //add constructor that sets the head to NULL
 	// this is a special linked list that is made out of BlockHeader s. 
 public:
 	BlockHeader* head;		// you need a head of the list
-
-	LinkedList(){
-		head = NULL;
-	}
-
+    int length;
 	void insert (BlockHeader* b){	// adds a block to the list
-		BlockHeader* temp = head;
-		if (head == NULL){
+        BlockHeader* temp = head;
+        if(head==NULL){
 			head = b;
-		}
-		while (temp->next != NULL){
-			temp = temp->next;
-		}
-		temp->next = b;
+			cout<<head<<endl;
+			return;
+			}
+
+        while(temp->next!=NULL){
+            temp = temp->next;
+        }
+        temp->next = b;
 	}
 
 	void remove (BlockHeader* b){  // removes a block from the list
-		if(head == NULL){
-			cerr<<"No node to remove!";
+        if(head==NULL){
+			cerr<<"Nothing"<<endl;
 			return;
-		}
-		if (head->next == NULL){
-			head = NULL;
-			return;
-		}
-		if (head->next!=NULL){
-			head = head->next;
-			b->next = NULL;
-			return;
-		}
-	}
+			}
 
-	
+        if(head->next==NULL){
+            head=NULL;
+            return;
+        }
+        if(head->next!=NULL){
+            head = head->next;
+            b->next = NULL;
+            return;
+        }
+        
+	}
+    
+    LinkedList(){
+        length = 0;
+        head = NULL;
+    }
 };
 
 
@@ -62,12 +74,11 @@ private:
 	vector<LinkedList> FreeList;
 	int basic_block_size;
 	int total_memory_size;
-	char* start;
+    char* start;
 
 private:
 	/* private function you are required to implement
 	 this will allow you and us to do unit test */
-	
 	BlockHeader* getbuddy (BlockHeader * addr); 
 	// given a block address, this function returns the address of its buddy 
 	
@@ -91,13 +102,14 @@ public:
 	   memory made available to the allocator. If an error occurred, 
 	   it returns 0. 
 	*/ 
-
+    
 	~BuddyAllocator(); 
 	/* Destructor that returns any allocated memory back to the operating system. 
 	   There should not be any memory leakage (i.e., memory staying allocated).
 	*/ 
-
-	char* alloc(int _length); 
+    int _getListNo(int sizeKb);
+	char* alloc(int _length);
+    char* alloc_helper(int list_pos, int b_size);
 	/* Allocate _length number of bytes of free memory and returns the 
 		address of the allocated portion. Returns 0 when out of memory. */ 
 
@@ -109,7 +121,7 @@ public:
 	/* Mainly used for debugging purposes and running short test cases */
 	/* This function should print how many free blocks of each size belong to the allocator
 	at that point. The output format should be the following (assuming basic block size = 128 bytes):
-	BlockHeader*
+
 	[0] (128): 5
 	[1] (256): 0
 	[2] (512): 3
