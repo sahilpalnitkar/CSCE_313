@@ -17,12 +17,6 @@ public:
 	BlockHeader* next; // pointer to the next block
     BlockHeader* buddy;
 	bool isBuddy;
-//    BlockHeader(){
-//        next = NULL;
-//        buddy = NULL;
-//        free = true;
-//        cout<<"BH const"<<endl;
-//    }
 };
 
 class LinkedList{ //add constructor that sets the head to NULL
@@ -34,7 +28,7 @@ public:
         BlockHeader* temp = head;
         if(head==NULL){
 			head = b;
-			cout<<head<<endl;
+			// cout<<head<<endl;
 			return;
 			}
 
@@ -44,12 +38,17 @@ public:
         temp->next = b;
 	}
 
-	void remove (BlockHeader* b){  // removes a block from the list
+	void remove (BlockHeader* b){  // removes a block fzrom the list
         if(head==NULL){
 			cerr<<"Nothing"<<endl;
 			return;
 			}
 
+		else if(head==b && b->next == NULL){
+            head=NULL;
+			b->next = NULL;
+            return;
+        }
         else if(head==b){
             head=b->next;
 			b->next = NULL;
@@ -57,10 +56,10 @@ public:
         }
 		else{
 			BlockHeader* temp = head;
-			while(temp->next != b){
+			while(temp->next != b && temp->next != NULL){
 				temp = temp->next;
 			}
-			if (temp->next->next != NULL){
+			if (b->next != NULL){
 				temp->next = b->next;
 				b->next = NULL;
 				return;

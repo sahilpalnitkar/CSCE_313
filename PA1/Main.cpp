@@ -9,11 +9,15 @@ void easytest(BuddyAllocator* ba){
   ba->printlist();
   // allocating a byte
   // char * mem = ba->alloc (1);
-  char * mem = ba->alloc (1);
+  // ba->free (mem);
+  // char * mem = ba->alloc (1);
+  // cout<<mem<<endl;
+  char * mem1 = ba->alloc (256);
   // now print again, how should the list look now
   ba->printlist ();
-
-  ba->free (mem); // give back the memory you just allocated
+  ; // give back the memory you just allocated
+  // ba->free (mem1); // give back the memory you just allocated
+  ba->free (mem1);
   ba->printlist(); // shouldn't the list now look like as in the beginning
 
 }
@@ -31,9 +35,9 @@ int main(int argc, char ** argv) {
 
   
   // stress-test the memory manager, do this only after you are done with small test cases
-//   Ackerman* am = new Ackerman ();
-//   am->test(allocator); // this is the full-fledged test. 
+  // Ackerman* am = new Ackerman ();
+  // am->test(allocator); // this is the full-fledged test. 
   
-//   // destroy memory manager
-//   delete allocator;
+  // destroy memory manager
+  // delete allocator;
 }
