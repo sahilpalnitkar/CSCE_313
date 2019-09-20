@@ -20,6 +20,7 @@ BuddyAllocator::BuddyAllocator (int _basic_block_size, int _total_memory_length)
     total_memory_size = _total_memory_length;
     start = new char[total_memory_size];
     int j = (int) log2(total_memory_size/basic_block_size);
+    memory = new char[total_memory_size];
     
     for(int i=_basic_block_size; i<=_total_memory_length; i = i*2){
         cout<<i<<endl;
@@ -80,8 +81,8 @@ char* BuddyAllocator::alloc(int _length) {
         while(j>i){
             BlockHeader* b = FreeList[j].head;
             BlockHeader* bb = split(b);
-            FreeList[j-1].insert(b);
-            FreeList[j].remove(b);
+            FreeList[j-1].insert(bb);
+            // FreeList[j].remove(b);
             --j;
             this->printlist();
         }
@@ -95,25 +96,114 @@ char* BuddyAllocator::alloc(int _length) {
 
 BlockHeader* BuddyAllocator::split(BlockHeader* block){
     
-    int split_block_size = (int) (block->block_size/2);
-    BlockHeader* buddy_block_size = (BlockHeader*) block + split_block_size;
-    buddy_block_size->block_size = split_block_size;
+
+    uint split_block_size = (uint) (block->block_size/2);
+    BlockHeader* buddy_block = new BlockHeader();
+    int s2 = sizeof(BlockHeader);
+    buddy_block = block + split_block_size;
+    buddy_block = (BlockHeader*)malloc(s2);
     block->block_size = split_block_size;
-    buddy_block_size -> next = NULL;
-    block->buddy = buddy_block_size;
-    buddy_block_size->buddy = block;
+    buddy_block->block_size = split_block_size;
+    buddy_block->next = NULL;
+    buddy_block->isBuddy = true;
+    block->buddy = buddy_block;
+    buddy_block->buddy = block;
     int pos = (int) (log2(split_block_size/basic_block_size));
-    this->FreeList[pos].insert(buddy_block_size);
-    return buddy_block_size;
+    // this->FreeList[pos].insert(buddy_block);
+    this->FreeList[pos].insert(block);
+    this->FreeList[pos+1].remove(block);
+    return buddy_block;
 }
 
 
 
 int BuddyAllocator::free(char* _a) {
     /* Same here! */
-    delete _a;
+    BlockHeader* block = (BlockHeader*) _a;
+    block->free = true;
+    bool a = true;
+    while(a){
+
+        BlockHeader* buddy_block = getbuddy(block);
+        // BlockHeader* buddy_block = block + block->block_size;
+        cout<<block->block_size<<endl;
+        cout<<buddy_block<<endl;
+        // cout<<buddy_block->free<<endl;
+        if (buddy_block->free == true){
+            merge(block,buddy_block);
+        }
+        // else{
+            a = false;
+        // }
+    }
     return 0;
 }
+
+BlockHeader* BuddyAllocator::getbuddy(BlockHeader* block){
+    // start = new char[total_memory_size];
+    BlockHeader* buddy_block;
+    if (block->isBuddy){
+        buddy_block = block - block->block_size;
+        cout<<buddy_block<<endl;
+    }
+    else{
+        buddy_block = block + block->block_size;
+        cout<<buddy_block<<endl;
+
+    }
+    // BlockHeader* buddy = (BlockHeader*)((((char*)block-start) xor (block->block_size)) + start);
+    // BlockHeader* buddy = (BlockHeader*)((((char*)block-start) xor (uintptr_t)(block->block_size)) + start);
+    // char* addr = (char*) (block);
+    // char* buddy = (((char*)block - memory) xor (block->block_size)) + memory;
+    // cout<<buddy<<endl;
+    // return (BlockHeader*) buddy;
+    return (BlockHeader*) buddy_block;
+}
+
+bool BuddyAllocator::arebuddies (BlockHeader* block1, BlockHeader* block2){
+    BlockHeader* buddy1 = getbuddy(block1);
+    BlockHeader* buddy2 = getbuddy(block2);
+
+    if (block1->buddy == buddy1 && block2->buddy == buddy2){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+BlockHeader* BuddyAllocator::merge (BlockHeader* block1, BlockHeader* block2){
+    if (block1->block_size != block2->block_size){
+        return NULL;
+    }
+    // if (arebuddies(block1, block2) == false){
+    //     cout<<block1->buddy<<endl;
+    //     cout<<block2->buddy<<endl;
+    //     return NULL;
+    // }
+    BlockHeader* num1 = NULL;
+    BlockHeader* num2 = NULL;
+    if (block1>block2){
+        num1 = block2;
+        num2 = block1;
+    }
+    else{
+        num1 = block1;
+        num2 = block2;
+    }
+    cout<<num1<<endl;
+    cout<<num2<<endl;
+    int pos = (int) (log2(num1->block_size/basic_block_size));
+
+    num1->block_size = (num1->block_size*2);
+    num2->block_size = (num2->block_size*2);
+
+    FreeList[pos+1].insert(num1);
+    FreeList[pos].remove(num1);
+    cout<<"SUCCESSFULLY MERGED<"<<endl;
+
+}
+
 
 
 void BuddyAllocator::printlist (){

@@ -16,6 +16,7 @@ public:
 	int block_size;  // size of the block
 	BlockHeader* next; // pointer to the next block
     BlockHeader* buddy;
+	bool isBuddy;
 //    BlockHeader(){
 //        next = NULL;
 //        buddy = NULL;
@@ -49,14 +50,26 @@ public:
 			return;
 			}
 
-        if(head->next==NULL){
-            head=NULL;
+        else if(head==b){
+            head=b->next;
+			b->next = NULL;
             return;
         }
-        if(head->next!=NULL){
-            head = head->next;
-            b->next = NULL;
-            return;
+		else{
+			BlockHeader* temp = head;
+			while(temp->next != b){
+				temp = temp->next;
+			}
+			if (temp->next->next != NULL){
+				temp->next = b->next;
+				b->next = NULL;
+				return;
+			
+			}
+			else{
+				temp->next = NULL;
+				b->next = NULL;
+			}
         }
         
 	}
@@ -75,12 +88,12 @@ private:
 	int basic_block_size;
 	int total_memory_size;
     char* start;
+	char* memory;
 
 private:
 	/* private function you are required to implement
 	 this will allow you and us to do unit test */
-	BlockHeader* getbuddy (BlockHeader * addr); 
-	// given a block address, this function returns the address of its buddy 
+ 
 	
 	bool arebuddies (BlockHeader* block1, BlockHeader* block2);
 	// checks whether the two blocks are buddies are not
@@ -92,6 +105,9 @@ private:
 	BlockHeader* split (BlockHeader* block);
 	// splits the given block by putting a new header halfway through the block
 	// also, the original header needs to be corrected
+
+	BlockHeader* getbuddy(BlockHeader* block);
+	// given a block address, this function returns the address of its buddy 
 
 
 public:
@@ -109,7 +125,6 @@ public:
 	*/ 
     int _getListNo(int sizeKb);
 	char* alloc(int _length);
-    char* alloc_helper(int list_pos, int b_size);
 	/* Allocate _length number of bytes of free memory and returns the 
 		address of the allocated portion. Returns 0 when out of memory. */ 
 
