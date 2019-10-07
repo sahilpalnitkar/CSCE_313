@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
 
     pid_t c_pid = fork();
     if (c_pid == 0){
-        cout<<"EXECING DATASERVER"<<endl;
+        cout<<"STARTING DATASERVER"<<endl;
 
         char* dataserver_args[] = {"./dataserver" , NULL};
         execvp(dataserver_args[0],dataserver_args);
@@ -71,12 +71,14 @@ int main(int argc, char *argv[]){
             char* buf = chan.cread();
 
             double ecg_value = *(double*)buf;
-            cout<<"ECG VALUE: "<<ecg_value<<endl;
+            cout<<"ECG VALUE "<<ecg_record<<" is "<<ecg_value<<endl;
             MESSAGE_TYPE m = QUIT_MSG;
             chan.cwrite(&m, sizeof(MESSAGE_TYPE));
             return 0;
         }
         else if((pflag) && (!tflag)&&(!eflag)){
+            timeval start, end;
+            gettimeofday(&start, NULL); 
             FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
             cout<<"Started data points function"<<endl;
             stringstream ss;
@@ -101,6 +103,17 @@ int main(int argc, char *argv[]){
                 outputFile<<x<<","<<ecg_value1<<","<<ecg_value2<<endl;
             }
             outputFile.close();
+            gettimeofday(&end, NULL);
+            double time_taken; 
+  
+            time_taken = (end.tv_sec - start.tv_sec) * 1e6; 
+            time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6; 
+        
+            cout << "Time taken by program is : " << fixed << time_taken << setprecision(6); 
+            cout << " sec" << endl; 
+            return 0; 
+            // Calculating total time taken by the program. 
+            
             MESSAGE_TYPE m = QUIT_MSG;
             chan.cwrite(&m, sizeof(MESSAGE_TYPE));
         }
@@ -108,52 +121,43 @@ int main(int argc, char *argv[]){
             FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
             ofstream outputFile("received");
             string outfilename = "received/y"+filename;
-            outputFile.open(outfilename, ios::out | ios::app | ios::binary);
+            outputFile.open(outfilename, ios::out | ios::binary);
             cout<<filename<<endl;
             filemsg file = filemsg(0,0);
             char* buf = new char[sizeof(filemsg) + filename.length() + 1];
-            memcpy(buf, &file, sizeof(filemsg));
+            memcpy(buf, (char*) &file, sizeof(filemsg));
             strcpy(buf + sizeof(filemsg), filename.c_str());
-            chan.cwrite(buf, sizeof(filemsg)+filename.length()+1);
-            int file_length = *(int*)chan.cread();
+            int request = chan.cwrite(buf, sizeof(filemsg)+filename.length()+1);
+            int file_length = *(int*)chan.cread(&request);
             cout<<"FILE LENGTH IS: "<<file_length<<endl;
-            int file_request_counter = file_length/MAX_MESSAGE;
-            int remaining_file_length = MAX_MESSAGE*file_request_counter;
-            cout<<"FILE REQUEST COUNTER IS: "<<file_request_counter<<endl;
-            while(file_length > MAX_MESSAGE){
-                for (int i = 0; i<file_request_counter; i++){
-                    if (i == 0){
-                        filemsg request_1 = filemsg(0,MAX_MESSAGE);
-                        char* buf2 = new char[sizeof(filemsg)+ filename.length() + 1];
-                        memcpy(buf2, &request_1, sizeof(filemsg));
-                        strcpy(buf2 + sizeof(filemsg), filename.c_str());                
-                        chan.cwrite(buf2, sizeof(filemsg)+ filename.length() + 1);
-                        char* ret_buf = chan.cread();
-                        // cout<<ret_buf;
-                        file_length = file_length - MAX_MESSAGE;
-                        outputFile << ret_buf;
-                    }
-                    else{
-                        filemsg request_1 = filemsg(((MAX_MESSAGE*i)),(MAX_MESSAGE));
-                        char* buf2 = new char[sizeof(filemsg)+ filename.length() + 1];
-                        memcpy(buf2, &request_1, sizeof(filemsg));
-                        strcpy(buf2 + sizeof(filemsg), filename.c_str());
-                        chan.cwrite(buf2, sizeof(filemsg)+ filename.length() + 1);
-                        char* ret_buf = chan.cread();
-                        // cout<<ret_buf;
-                        file_length = file_length - MAX_MESSAGE;
-                        outputFile << ret_buf;
-                    }
-                }
+            int file_request_limit = file_length/MAX_MESSAGE;
+            int file_request_counter = 0;
+            int offset = 0;
+            int remaining_file_length = MAX_MESSAGE*file_request_limit;
+            cout<<"FILE REQUEST COUNTER IS: "<<file_request_limit<<endl;
+            while(file_request_counter < file_request_limit){
+                filemsg request_1 = filemsg(offset,MAX_MESSAGE);
+                char* buf2 = new char[sizeof(filemsg)+ filename.length() + 1];
+                memcpy(buf2, (char*)&request_1, sizeof(filemsg));
+                strcpy(buf2 + sizeof(filemsg), filename.c_str());                
+                int request2 = chan.cwrite(buf2, sizeof(filemsg)+ filename.length() + 1);
+                char* ret_buf = (char*)chan.cread(&request2);
+                cout<<ret_buf;
+                file_request_counter++;
+                offset += MAX_MESSAGE;
+                // file_length = file_length - MAX_MESSAGE;
+                outputFile.write(ret_buf,256);
             }
-            filemsg request_1 = filemsg(remaining_file_length, file_length);
-            char* buf2 = new char[sizeof(filemsg)+ filename.length() + 1];
-            memcpy(buf2, &request_1, sizeof(filemsg));
-            strcpy(buf2 + sizeof(filemsg), filename.c_str());
-            chan.cwrite(buf2, sizeof(filemsg)+ filename.length() + 1);
-            char* ret_buf = chan.cread();
-            // cout<<ret_buf;
-            outputFile << ret_buf;
+            if (file_length - offset > 0){
+                filemsg request_1 = filemsg(offset, file_length - offset);
+                char* buf2 = new char[sizeof(filemsg)+ filename.length() + 1];
+                memcpy(buf2, (char*)&request_1, sizeof(filemsg));
+                strcpy(buf2 + sizeof(filemsg), filename.c_str());                
+                int request2 = chan.cwrite(buf2, sizeof(filemsg)+ filename.length() + 1);
+                char* ret_buf = (char*)chan.cread(&request2);
+                outputFile.write(ret_buf,file_length-offset);
+            }
+            
             outputFile.close();
             MESSAGE_TYPE m = QUIT_MSG;
             chan.cwrite(&m, sizeof(MESSAGE_TYPE));
@@ -172,9 +176,6 @@ int main(int argc, char *argv[]){
             chan2.cwrite(&data1, sizeof(datamsg));
             double new_channel_data = *(double*)chan2.cread();
             cout<<new_channel_data<<endl;
-            // get_file_chunks_from_server(chan, 1);
-            // get_file_data_points_from_server(chan2, 2);
-                // closing the channel    
             MESSAGE_TYPE m = QUIT_MSG;
             chan2.cwrite(&m, sizeof(MESSAGE_TYPE));
             chan.cwrite(&m, sizeof(MESSAGE_TYPE));
