@@ -30,7 +30,7 @@ int main(int argc, char *argv[]){
 
     pid_t c_pid = fork();
     if (c_pid == 0){
-        cout<<"STARTING DATASERVER"<<endl;
+        cout<<"Starting Dataserver"<<endl;
 
         char* dataserver_args[] = {"./dataserver" , NULL};
         execvp(dataserver_args[0],dataserver_args);
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
 
             
             ofstream outputFile("received");  
-            outputFile.open(outfilename, ios::out | ios::app | ios::binary);
+            outputFile.open(outfilename, ios::out | ios::binary);
             for (double x = 0; x < 59.996; x = x +0.004){
                 datamsg data1 = datamsg (patient_number, x, 1);
                 chan.cwrite(&data1, sizeof(data1));
@@ -111,13 +111,14 @@ int main(int argc, char *argv[]){
         
             cout << "Time taken by program is : " << fixed << time_taken << setprecision(6); 
             cout << " sec" << endl; 
-            return 0; 
             // Calculating total time taken by the program. 
             
             MESSAGE_TYPE m = QUIT_MSG;
             chan.cwrite(&m, sizeof(MESSAGE_TYPE));
         }
         else if (fflag){
+            timeval start, end;
+            gettimeofday(&start, NULL); 
             FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
             ofstream outputFile("received");
             string outfilename = "received/y"+filename;
@@ -159,9 +160,17 @@ int main(int argc, char *argv[]){
             }
             
             outputFile.close();
+            gettimeofday(&end, NULL);
+            double time_taken; 
+  
+            time_taken = (end.tv_sec - start.tv_sec) * 1e6; 
+            time_taken = (time_taken + (end.tv_usec - start.tv_usec)) * 1e-6; 
+        
+            cout << "Time taken by program is : " << fixed << time_taken << setprecision(6); 
+            cout << " sec" << endl; 
             MESSAGE_TYPE m = QUIT_MSG;
             chan.cwrite(&m, sizeof(MESSAGE_TYPE));
-            return 0;
+            
         }
         else if(cflag){
             cout<<"MAKING NEW SERVER"<<endl;
