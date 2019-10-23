@@ -37,8 +37,9 @@ public:
 		unique_lock<std::mutex> lck(mtx);
 		slot_available.wait(lck, [this]{return q.size() < cap;});
 		q.push(data);
-		cout<<"SIZE AFTER PUSH: "<<q.size()<<endl;
+		// cout<<"SIZE AFTER PUSH: "<<q.size()<<endl;
 		data_available.notify_one();
+		lck.unlock();
 
 	}
 
@@ -47,16 +48,17 @@ public:
 		data_available.wait(lck, [this]{return q.size() > 0;});
 		vector<char> temp = q.front();
 		q.pop();
-		cout<<"SIZE AFTER POP: "<<q.size()<<endl;
+		// cout<<"SIZE AFTER POP: "<<q.size()<<endl;
 		slot_available.notify_one();
+		lck.unlock();
 		return temp;
 	}
 
-	int size(){
-		mtx.lock();
-		return q.size();
-		mtx.unlock();
-	}
+	// int size(){
+	// 	mtx.lock();
+	// 	return q.size();
+	// 	mtx.unlock();
+	// }
 
 	queue<vector<char>> getqueue(){
 		return q;

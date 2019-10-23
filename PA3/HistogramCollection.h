@@ -1,13 +1,16 @@
 #include <iostream>
 #include <vector>
 #include <stdio.h>
+#include <mutex>
 #include "Histogram.h"
 using namespace std;
 
 class HistogramCollection{
 private:
     vector<Histogram*> hists; //collection of histograms
+    mutex mtx;
 public:
+    
     HistogramCollection (){
         hists.clear();
     }
@@ -56,6 +59,7 @@ public:
     }
 
     void update (datamsg data_message, double ecg_value ){
+		unique_lock<std::mutex> lck(mtx);
         int person = data_message.person;
         hists[person-1]->update(ecg_value);
     }
