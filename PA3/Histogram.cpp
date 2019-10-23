@@ -12,6 +12,7 @@ Histogram::Histogram(int _nbins, double _start, double _end): nbins (_nbins), st
 Histogram::~Histogram(){
 }
 void Histogram::update (double value){
+	unique_lock<std::mutex> lck(mtx);
 	int bin_index = (int) ((value - start) / (end - start) * nbins);
 	if (bin_index <0)
 		bin_index= 0;
