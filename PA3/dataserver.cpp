@@ -82,6 +82,7 @@ void process_file_request (FIFORequestChannel* rc, char* request){
 	if (f->offset == 0 && f->length == 0){ // means that the client is asking for file size
 		__int64_t fs = get_file_size (filename);
 		rc->cwrite ((char *)&fs, sizeof (__int64_t));
+		cout<<"IN FILE MSG"<<endl;
 		return;
 	}
 	
