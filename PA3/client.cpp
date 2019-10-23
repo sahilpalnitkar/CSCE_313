@@ -6,6 +6,7 @@
 #include "FIFOreqchannel.h"
 #include<vector>
 #include <fcntl.h>
+#include <iostream>
 
 using namespace std;
 
@@ -26,7 +27,7 @@ void patient_function_data(int patient_number, int num_points, BoundedBuffer *re
     /* What will the patient threads do? */
 
 
-void worker_function_data(BoundedBuffer *request_buffer,FIFORequestChannel *chan2, HistogramCollection* hc)
+void worker_function_data(BoundedBuffer *request_buffer, FIFORequestChannel *chan2, HistogramCollection* hc)
 {
     /*
         Functionality of the worker threads 
@@ -114,8 +115,9 @@ void worker_function_file(BoundedBuffer *request_buffer, string filename, FIFORe
     // ofstream outputFile("received");
     cout<<"AFTER STRCPY"<<endl;
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+    string outfilename = "received/y"+filename;
 
-    int f_write = open("x.csv", O_APPEND | O_RDWR | O_CREAT , mode);
+    int f_write = open(outfilename.c_str(), O_APPEND | O_RDWR | O_CREAT , mode);
 
     while(true)
     {
@@ -137,11 +139,15 @@ void worker_function_file(BoundedBuffer *request_buffer, string filename, FIFORe
             char* ret_buf = (char*)chan2->cread(&request2);
             lseek(f_write, file_msg.offset, SEEK_SET);
             cout<<"OFFSET IS: "<<f_write<<endl;
-            if (file_msg.length < MAX_MESSAGE){
-                write(f_write, ret_buf, file_msg.length);
+            if (strlen(ret_buf) < MAX_MESSAGE){
+                cout<<"WE ARE HERE IN THE LAST BUFFER"<<endl;
+                cout<<"BUFFER SIZE IS :"<<strlen(ret_buf)<<endl;
+                cout<<"FILEMSG LENGTH IS :"<<file_msg.length<<endl;
+                write(f_write, (void*)ret_buf, strlen(ret_buf));
             }
             else{
-                write(f_write, ret_buf, MAX_MESSAGE);
+                cout<<"FULL FILEMSG LENGTH IS :"<<strlen(ret_buf)<<endl;
+                write(f_write, (void*)ret_buf, MAX_MESSAGE);
             }
         }
         else{
@@ -156,11 +162,37 @@ int main(int argc, char *argv[])
 {
     int n = 15000;          //default number of requests per "patient"
     int p = 15;             // number of patients [1,15]
-    int w = 1;              //default number of worker threads
+    int w = 50;              //default number of worker threads
     int b = 50;             // default capacity of the request buffer, you should change this default
     int m = MAX_MESSAGE;    // default capacity of the file buffer
     srand(time_t(NULL));
-    
+    int option;
+    int fflag = 0;
+    int status2;
+    string filename;
+    while ((option = getopt(argc,argv, "n:p:w:b:f:")) != -1){
+            switch (option) {
+                case 'n':
+                    n = atoi(optarg);
+                    break;
+                case 'p':
+                    p = atof(optarg);
+                    break;
+                case 'w':
+                    w = atoi(optarg);
+                    break;
+                case 'f':
+                    fflag = 1;
+                    filename = optarg;
+                    break;
+                case 'b':
+                    b = atoi(optarg);
+                    break;
+                default:
+                    status2 = -1;
+                    break;
+            }
+        }
     
     int pid = fork();
     if (pid == 0){
@@ -169,72 +201,138 @@ int main(int argc, char *argv[])
 
     }
 
-    FIFORequestChannel* chan = new FIFORequestChannel("control", FIFORequestChannel::CLIENT_SIDE);
-    BoundedBuffer request_buffer(b);
-    HistogramCollection* hc = new HistogramCollection();
-    vector<thread*> *producer = new vector<thread*>;
-    vector<thread*> *consumer = new vector<thread*>;
-    struct timeval start, end;
-    gettimeofday (&start, 0);
-    string filename = "1.csv";
-    /* Start all threads here */
+    if (fflag){
+        int x = 1;
+        FIFORequestChannel* chan = new FIFORequestChannel("control", FIFORequestChannel::CLIENT_SIDE);
+        BoundedBuffer request_buffer(b);
+        vector<thread*> *producer = new vector<thread*>;
+        vector<thread*> *consumer = new vector<thread*>;
+        struct timeval start, end;
+        gettimeofday (&start, 0);
+        /* Start all threads here */
 
-    // for (int i = 1; i < p+1; i++){
-    //     Histogram *h = new Histogram(10, -2, 2);
-    //     hc->add(h);
-    //     thread *patient_thread = new thread(patient_function_data, i, n, &request_buffer);
-    //     producer->push_back(patient_thread);
-    // }
-    thread *patient_thread = new thread(patient_function_file, &request_buffer, filename, chan);
-    // patient_thread->join();
+        thread *patient_thread = new thread(patient_function_file, &request_buffer, filename, chan);
 
-    string outfilename = "y"+filename;
-    // for (int i = 0; i < w; i++){
         MESSAGE_TYPE newchannel = NEWCHANNEL_MSG;
         chan->cwrite((char*) &newchannel, sizeof(MESSAGE_TYPE));
         char* buf = chan->cread();       
         FIFORequestChannel *chan2  = new FIFORequestChannel(buf, FIFORequestChannel::CLIENT_SIDE);
-        // thread *worker_thread = new thread(worker_function_file, &request_buffer, filename, chan2);
         worker_function_file(&request_buffer, filename, chan2);
         MESSAGE_TYPE q = QUIT_MSG;
         chan2->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
         delete chan2;
-        // consumer->push_back(worker_thread);
-    // }
-    // for (int i = 0; i < w; i++){
-    //     MESSAGE_TYPE newchannel = NEWCHANNEL_MSG;
-    //     chan->cwrite((char*) &newchannel, sizeof(MESSAGE_TYPE));
-    //     char* buf = chan->cread();        
-    //     FIFORequestChannel *chan2  = new FIFORequestChannel(buf, FIFORequestChannel::CLIENT_SIDE);
-    //     thread *worker_thread = new thread(worker_function_data, &request_buffer,chan2, hc);
-    //     consumer->push_back(worker_thread);
-    // }
     
-    // for(int i = 0; i < p; i++){
-    //     producer->at(i)->join();
-    // }
+                                                                                                                                                                            if(x = 0) {    
+        for (int i = 0; i < w; i++){
+            MESSAGE_TYPE newchannel = NEWCHANNEL_MSG;
+            chan->cwrite((char*) &newchannel, sizeof(MESSAGE_TYPE));
+            char* buf = chan->cread();        
+            FIFORequestChannel *chan2  = new FIFORequestChannel(buf, FIFORequestChannel::CLIENT_SIDE);
+            thread *worker_thread = new thread(worker_function_file,&request_buffer, filename, chan2);
+            consumer->push_back(worker_thread);
+        }
+        }
+        
+        // for(int i = 0; i < p; i++){
+        //     producer->at(i)->join();
+        // }
 
-    for(int i = 0; i < w; i++){
+        for(int i = 0; i < w; i++){
+            MESSAGE_TYPE q = QUIT_MSG;
+            vector<char> push_msg1((char*) &q, (char*) &q + sizeof(MESSAGE_TYPE));
+            request_buffer.push(push_msg1);        
+        }
+        
+        for(int i = 0; i < w; i++){
+            consumer->at(i)->join();
+            // hc->print();
+        }
+
+        /* Join all threads here */
+        gettimeofday (&end, 0);
+        int secs = (end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)/(int) 1e6;
+        int usecs = (int)(end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)%((int) 1e6);
+        cout << "Took " << secs << " seconds and " << usecs << " micor seconds" << endl;
+        for (int i = 0; i< p; i++){
+            delete producer->at(i);
+        }
+        delete producer;
+        for (int i = 0; i< w; i++){
+            delete consumer->at(i);
+        }
+        delete consumer;
+        // MESSAGE_TYPE q = QUIT_MSG;
+        chan->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
+        cout << "All Done!!!" << endl;
+        delete chan;
+    }
+    else{
+        FIFORequestChannel* chan = new FIFORequestChannel("control", FIFORequestChannel::CLIENT_SIDE);
+        BoundedBuffer request_buffer(b);
+        HistogramCollection* hc = new HistogramCollection();
+        vector<thread*> *producer = new vector<thread*>;
+        vector<thread*> *consumer = new vector<thread*>;
+        struct timeval start, end;
+        gettimeofday (&start, 0);
+
+        /* Start all threads here */
+        for (int i = 1; i < p+1; i++){
+            Histogram *h = new Histogram(10, -2, 2);
+            hc->add(h);
+            thread *patient_thread = new thread(patient_function_data, i, n, &request_buffer);
+            producer->push_back(patient_thread);
+        }
+
+        for (int i = 0; i < w; i++){
+            MESSAGE_TYPE newchannel = NEWCHANNEL_MSG;
+            char* msg = new char[sizeof(MESSAGE_TYPE)];
+            *msg = (char)newchannel;
+
+            chan->cwrite((char*) &newchannel, sizeof(MESSAGE_TYPE));
+            char* buf = chan->cread();        
+            FIFORequestChannel *chan2  = new FIFORequestChannel(buf, FIFORequestChannel::CLIENT_SIDE);
+            thread *worker_thread = new thread(worker_function_data, &request_buffer, chan2, hc);
+            consumer->push_back(worker_thread);
+        }
+        cout<<"CONSUMER SIZE IS: "<< producer->size()<<endl;
+
+
+        /* Join all threads here */
+        for(int i = 0; i < p; i++){
+            producer->at(i)->join();
+        }
+
+        for(int i = 0; i < w; i ++){
+            MESSAGE_TYPE q = QUIT_MSG;
+            char* buf = (char*) &q;
+            vector<char> push_msg1((char*) &q, (char*) &q + sizeof(MESSAGE_TYPE));
+            request_buffer.push(push_msg1);      
+
+        }
+
+        for(int i = 0; i < w; i++){
+            consumer->at(i)->join();
+        }
+
+        gettimeofday (&end, 0);
+        int secs = (end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)/(int) 1e6;
+        int usecs = (int)(end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)%((int) 1e6);
+        hc->print();
+
+        cout << "Took " << secs << " seconds and " << usecs << " micro seconds" << endl;
         MESSAGE_TYPE q = QUIT_MSG;
-        vector<char> push_msg1((char*) &q, (char*) &q + sizeof(MESSAGE_TYPE));
-        request_buffer.push(push_msg1);        
-    }
+        chan->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
+        cout << "All Done!!!" << endl;
+        delete chan;
+          for (int i = 0; i< p; i++){
+        delete producer->at(i);
+        }
+        delete producer;
+        for (int i = 0; i< w; i++){
+            delete consumer->at(i);
+        }
+        delete consumer;
+        }
     
-    for(int i = 0; i < w; i++){
-        consumer->at(i)->join();
-        // hc->print();
-    }
-
-    /* Join all threads here */
-    gettimeofday (&end, 0);
-    hc->print ();
-    int secs = (end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)/(int) 1e6;
-    int usecs = (int)(end.tv_sec * 1e6 + end.tv_usec - start.tv_sec * 1e6 - start.tv_usec)%((int) 1e6);
-    cout << "Took " << secs << " seconds and " << usecs << " micor seconds" << endl;
-
-    // MESSAGE_TYPE q = QUIT_MSG;
-    chan->cwrite ((char *) &q, sizeof (MESSAGE_TYPE));
-    cout << "All Done!!!" << endl;
-    delete chan;
     
 }
