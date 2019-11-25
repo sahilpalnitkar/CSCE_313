@@ -10,6 +10,13 @@
 #include <stdio.h>
 #include <algorithm>
 #include <vector>
+
+
+
+#define BOLDBLUE    "\033[1m\033[34m"      /* Bold Blue */
+#define BOLDWHITE   "\033[1m\033[37m"      /* Bold White */
+#define WHITE   "\033[37m" 
+
 using namespace std;
 string trim (string input){
     int i=0;
@@ -60,9 +67,6 @@ vector<string> split (string line, string separator=" "){
             int quote1;
             char eaccent = 130;
             for (int i = 1; i < line.length(); i++){
-                if (line[i] == '|'){
-                    line[i] = eaccent;
-                }
                 if (line[i] == '"'){
                     quote1 = i;
                     break;
@@ -89,9 +93,10 @@ vector<string> split (string line, string separator=" "){
         bool end = true;
         int quote = 0;
         for (int i = 0; i < line.length(); i++){
-            if (line[i] == '\''){
-                quote++;
-            }
+        //     if (line[i] == '\''){
+        //         quote++;
+        //         cout<<"quote is: "<<quote<<endl;
+        //     }
             if (line[i] == '|' && quote != 2 && line.substr(0,4) == "echo"){
                 findpipe = i;
                 ispipe = true;
@@ -99,22 +104,42 @@ vector<string> split (string line, string separator=" "){
                 line[i] = 130;
             }
         }
-        if(ispipe && !end){
-            continue;
-        }
+        
+        // if(ispipe && !end){
+        //     continue;
+        // }
+        // ispipe = false;
+        // end = true;
+        // quote = 0;
+        // for (int i = 0; i < line.length(); i++){
+        //     if (line[i] == '"'){
+        //         quote++;
+        //         cout<<"quote is: "<<quote<<endl;
+        //     }
+        //     if (line[i] == '|' && quote != 2 && line.substr(0,4) == "echo"){
+        //         findpipe = i;
+        //         ispipe = true;
+        //         end = false;
+        //         line[i] = 130;
+        //     }
+        // }
+        
+        // if(ispipe && !end){
+        //     continue;
+        // }
         string segment = trim (line.substr(0, found));
         //cout << "line: " << line << "found: " << found << endl;
         line = line.substr (found+1);
-
         //cout << "[" << segment << "]"<< endl;
         if (segment.size() != 0){ 
+            // cout<<ispipe<<endl;
             if (segment.size() == 1 && ispipe){
-                segment[0] = '|';
+                segment[0] = 124;
             }
             result.push_back (segment);
         }
         
-        //cout << line << endl;
+        //cout << line << endl;e
     }
     return result;
 }
@@ -130,7 +155,7 @@ char** vec_to_char_array (vector<string> parts){
     return result;
 }
 
-void execute (string command){
+void execute (string command , vector<pid_t> pidvector){
     vector<string> argstrings = split (command, " "); // split the command into space-separated parts
     int fdwrite , fdread;
     char temp1[FILENAME_MAX];
@@ -154,7 +179,7 @@ void execute (string command){
             argstrings.erase(argstrings.begin()+i);
         }
     }
-
+    
     if (argstrings[0] == "cd"){
         if (argstrings[1] == "-"){
             getcwd(temp2, sizeof(temp2));
@@ -170,6 +195,9 @@ void execute (string command){
         }
         return;
     }
+    if (argstrings[0] == "jobs"){
+            argstrings[0] = "ps";
+        }
    
     char** args = vec_to_char_array (argstrings);// convert vec<string> into an array of char*
     execvp (args[0], args);
@@ -177,24 +205,28 @@ void execute (string command){
 
 int main (){
     int stdin = dup(0);
+    vector<pid_t> pidlist;
+    vector<pid_t> pidlistcopy;
     while (true){ // repeat this loop until the user presses Ctrl + C
         char temp[FILENAME_MAX];
-        bool background = true;
-        vector<pid_t> pidlist;
-        cout << getcwd(temp, sizeof(temp)) << "$ ";
-        string commandline = "ls";/*get from STDIN, e.g., "ls  -la |   grep Jul  | grep . | grep .cpp" */
+        bool background = false;
+        printf(BOLDBLUE);
+        cout << getcwd(temp, sizeof(temp)) << WHITE<<  "$ ";
+        printf(WHITE);
+        string commandline = "";/*get from STDIN, e.g., "ls  -la |   grep Jul  | grep . | grep .cpp" */
         getline(cin,commandline);
         int pos;
+        pid_t background_process;
         size_t backgroundexists = commandline.find("&");
         if (backgroundexists != string::npos){
-            background = false;
+            background = true;
             pos = backgroundexists;
             commandline.erase(commandline.begin()+pos);
         }
         // split the command by the "|", which tells you the pipe levels
         if (commandline != ""){
             vector<string> tparts = split (commandline, "|");
-           
+
             // for each pipe, do the following:
             for (int i=0; i<tparts.size(); i++){
                 int fd[2];
@@ -210,16 +242,35 @@ int main (){
                         // redirect STDOUT to fd[1], so that it can write to the other side
                         close (fd[1]);   // STDOUT already points fd[1], which can be closed
                     }
+                    cout<<"in if "<<getpid()<<endl;
+                    // cout<<background<<endl;
+                    if (background == 1){
+                        pidlist.push_back(getpid());
+                        pidlistcopy.push_back(getpid());
+                    }
+                    // if (background == 1){
+                    //     cout<<"in backgroind"<<endl;
+                    //     background_process = getpid();
+                    //     pidlist.push_back(background_process);
+                    //     cout<<background_process<<endl;
+                    // }
                     //execute function that can split the command by spaces to 
                     // find out all the arguments, see the definitionls 
-                    execute (tparts [i]); // this is where you execute
+                    execute (tparts [i], pidlist); // this is where you execute
                 }else{
-                    pidlist.push_back(getpid());
-                    if (background == false){
-                        for (int i = 0; i < pidlist.size(); i++){
-                            waitpid(i,0, WNOHANG);
+                    cout<<"in else "<<getpid()<<endl;
+                    if (background == 1){
+                        int childstatus;
+                        cout<<"in background"<<endl;
+                        for (int i = 0; i < pidlist.size(); i++ ){
+                            childstatus = waitpid(pidlist[i], 0, WNOHANG);
                         }
+                        
+                        // background = false;
+                        dup2(fd[0],0);
+                        close(fd[1]);
                     }
+                    
                     else{
                         wait(0);            // wait for the child process
                         // then do other redirects
