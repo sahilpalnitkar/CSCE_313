@@ -31,10 +31,9 @@ int main(int argc, char *argv[]){
     pid_t c_pid = fork();
     if (c_pid == 0){
         cout<<"Starting Dataserver"<<endl;
-
         char* dataserver_args[] = {"./dataserver" , NULL};
         execvp(dataserver_args[0],dataserver_args);
-        perror("execve failed");
+        perror("execvp failed");
     }
     else if(c_pid>0){
 
@@ -99,7 +98,7 @@ int main(int argc, char *argv[]){
                 chan.cwrite(&data2, sizeof(data2));
                 char* buf2 = chan.cread();
                 double ecg_value2 = *(double*)buf2;
-                cout<<x<<", "<<ecg_value1<<", "<<ecg_value2<<endl;
+                // cout<<x<<", "<<ecg_value1<<", "<<ecg_value2<<endl;
                 outputFile<<x<<","<<ecg_value1<<","<<ecg_value2<<endl;
             }
             outputFile.close();
@@ -120,16 +119,16 @@ int main(int argc, char *argv[]){
             timeval start, end;
             gettimeofday(&start, NULL); 
             FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
-            ofstream outputFile("received");
-            string outfilename = "received/y"+filename;
-            outputFile.open(outfilename, ios::out | ios::binary);
-            cout<<filename<<endl;
-            filemsg file = filemsg(0,0);
-            char* buf = new char[sizeof(filemsg) + filename.length() + 1];
-            memcpy(buf, (char*) &file, sizeof(filemsg));
-            strcpy(buf + sizeof(filemsg), filename.c_str());
-            int request = chan.cwrite(buf, sizeof(filemsg)+filename.length()+1);
-            int file_length = *(int*)chan.cread(&request);
+                ofstream outputFile("received");
+                string outfilename = "received/y"+filename;
+                outputFile.open(outfilename, ios::out | ios::binary);
+                cout<<filename<<endl;
+                filemsg file = filemsg(0,0);
+                char* buf = new char[sizeof(filemsg) + filename.length() + 1];
+                memcpy(buf, (char*) &file, sizeof(filemsg));
+                strcpy(buf + sizeof(filemsg), filename.c_str());
+                int request = chan.cwrite(bu       f, sizeof(filemsg)+filename.length()+1);
+                int file_length = *(int*)chan.cread(&request);
             cout<<"FILE LENGTH IS: "<<file_length<<endl;
             int file_request_limit = file_length/MAX_MESSAGE;
             int file_request_counter = 0;
@@ -143,11 +142,11 @@ int main(int argc, char *argv[]){
                 strcpy(buf2 + sizeof(filemsg), filename.c_str());                
                 int request2 = chan.cwrite(buf2, sizeof(filemsg)+ filename.length() + 1);
                 char* ret_buf = (char*)chan.cread(&request2);
-                cout<<ret_buf;
+                // cout<<ret_buf;
                 file_request_counter++;
                 offset += MAX_MESSAGE;
                 // file_length = file_length - MAX_MESSAGE;
-                outputFile.write(ret_buf,256);
+                outputFile.write(ret_buf, MAX_MESSAGE);
             }
             if (file_length - offset > 0){
                 filemsg request_1 = filemsg(offset, file_length - offset);
